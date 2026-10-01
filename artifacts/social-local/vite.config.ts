@@ -5,6 +5,7 @@ import path from "path";
 
 const port = Number(process.env.PORT ?? 5173);
 const basePath = process.env.BASE_PATH ?? "/";
+const apiProxyTarget = process.env.API_PROXY_TARGET;
 
 export default defineConfig({
   base: basePath,
@@ -24,6 +25,9 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    proxy: apiProxyTarget
+      ? { "/api": { target: apiProxyTarget, changeOrigin: false } }
+      : undefined,
     port,
     strictPort: true,
     host: "0.0.0.0",

@@ -1,0 +1,73 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sociallocal
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sociallocal}
+      POSTGRES_DB: sociallocal
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sociallocal -d sociallocal"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: social-local-api:local
+    platform: linux/amd64
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: "8080"
+      DATABASE_URL: postgresql://sociallocal:${POSTGRES_PASSWORD:-sociallocal}@postgres:5432/sociallocal
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
+      APP_URL: ${APP_URL:-http://localhost:5173}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:5173}
+      HUGGING_FACE_API_KEY: ${HUGGING_FACE_API_KEY:-}
+    command:
+      - sh
+      - -c
+      - pnpm --filter @workspace/db run push && pnpm --filter @workspace/api-server run dev
+    volumes:
+      - uploads_data:/workspace/artifacts/api-server/uploads
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8080/api/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: social-local-web:local
+    platform: linux/amd64
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: "5173"
+      API_PROXY_TARGET: http://api:8080
+      VITE_FACEBOOK_APP_ID: ${VITE_FACEBOOK_APP_ID:-}
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+
+volumes:
+  postgres_data:
+  uploads_data:

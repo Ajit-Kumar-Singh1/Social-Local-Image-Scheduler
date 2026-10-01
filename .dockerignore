@@ -1,0 +1,15 @@
+.git
+.cache
+.local
+.agents
+.expo
+node_modules
+**/node_modules
+**/dist
+**/uploads
+attached_assets
+**/attached_assets
+.env
+.env.*
+!.env.example
+*.log
