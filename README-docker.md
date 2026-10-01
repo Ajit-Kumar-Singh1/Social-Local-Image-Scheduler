@@ -68,22 +68,15 @@ Meta's app review and permission approval.
 
 ## Facebook image publishing from Docker Desktop
 
-Local browsing and OAuth can use `localhost`, but Facebook's servers cannot
-fetch image files from `localhost`. To publish image posts, expose the web
-container through a public HTTPS tunnel or domain that forwards to host port
-`5173`, then set both `APP_URL` and `PUBLIC_URL` in `.env` to that public base
-URL (without a trailing slash). Add
-`<APP_URL>/api/auth/facebook/callback` to Meta's Valid OAuth Redirect URIs.
+Images and videos uploaded into the app are sent from the API container to
+Facebook as file uploads. Facebook does not need to fetch those files from
+`localhost`, so uploaded media can be published from Docker Desktop without a
+public tunnel. Keep the app running and do not remove its upload volume until
+the post has published.
 
-For example, if your tunnel URL is `https://social-local.example-tunnel.com`:
-
-```dotenv
-APP_URL=https://social-local.example-tunnel.com
-PUBLIC_URL=https://social-local.example-tunnel.com
-```
-
-Keep `WEB_PORT=5173` unless you also update your tunnel target and local URL.
-The tunnel must stay available while Facebook fetches the uploaded image.
+If you use an external image or video URL instead of uploading a file, Facebook
+must be able to access that URL publicly. OAuth still uses `APP_URL`; configure
+the matching callback URI in Meta's Valid OAuth Redirect URIs.
 
 ## Environment variables
 
@@ -97,7 +90,7 @@ automatically. `.env.example` is a template only; it is safe to commit, while
 | `FACEBOOK_APP_SECRET` | For Facebook OAuth | Meta App Secret used only by the API |
 | `VITE_FACEBOOK_APP_ID` | Optional | Same public App ID for frontend developer links |
 | `APP_URL` | Recommended | OAuth callback origin; defaults to `http://localhost:5173` |
-| `PUBLIC_URL` | For image publishing | Public origin used to create uploaded-image URLs |
+| `PUBLIC_URL` | Optional | Origin used to create uploaded-media URLs shown by the app |
 | `POSTGRES_PASSWORD` | Optional | Local database password; defaults to `sociallocal` |
 | `WEB_PORT` | Optional | Host port for the frontend; defaults to `5173` |
 | `HUGGING_FACE_API_KEY` | Optional | AI image generation |

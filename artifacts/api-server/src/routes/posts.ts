@@ -12,6 +12,7 @@ import {
   ListPostsQueryParams,
 } from "@workspace/api-zod";
 import { cleanupUploadedFile } from "../lib/cleanupUpload";
+import { publishToFacebook } from "../lib/facebook";
 
 const router = Router();
 
@@ -257,31 +258,8 @@ router.post("/posts/:id/publish", async (req, res): Promise<void> => {
     return;
   }
 
-  const postType = post.postType ?? "text";
-  const body: Record<string, string> = { access_token: page.accessToken };
-  let endpoint: string;
-
-  if (postType === "video" && post.imageUrl) {
-    endpoint = `https://graph.facebook.com/v19.0/${page.pageId}/videos`;
-    body.file_url = post.imageUrl;
-    body.description = post.caption;
-    if (post.title) body.title = post.title;
-  } else if (postType === "image" && post.imageUrl) {
-    endpoint = `https://graph.facebook.com/v19.0/${page.pageId}/photos`;
-    body.url = post.imageUrl;
-    body.caption = post.caption;
-  } else {
-    endpoint = `https://graph.facebook.com/v19.0/${page.pageId}/feed`;
-    body.message = post.caption;
-  }
-
   try {
-    const fbRes = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const fbData = await fbRes.json() as { id?: string; error?: { message: string } };
+    const fbData = await publishToFacebook(page, post);
 
     if (fbData.error) {
       await db
