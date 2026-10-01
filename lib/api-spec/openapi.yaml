@@ -3,20 +3,28 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Facebook AutoPoster API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: pages
+    description: Facebook page connections
+  - name: posts
+    description: Post management
+  - name: images
+    description: AI image generation
+  - name: dashboard
+    description: Dashboard stats and summaries
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +32,288 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /pages:
+    get:
+      operationId: listPages
+      tags: [pages]
+      summary: List connected Facebook pages
+      responses:
+        "200":
+          description: List of pages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FacebookPage"
+    post:
+      operationId: connectPage
+      tags: [pages]
+      summary: Connect a Facebook page using access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectPageBody"
+      responses:
+        "201":
+          description: Page connected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacebookPage"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /pages/{id}:
+    delete:
+      operationId: disconnectPage
+      tags: [pages]
+      summary: Disconnect a Facebook page
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Page disconnected
+        "404":
+          description: Page not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /posts:
+    get:
+      operationId: listPosts
+      tags: [posts]
+      summary: List all posts
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [draft, scheduled, published, failed]
+        - name: pageId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+    post:
+      operationId: createPost
+      tags: [posts]
+      summary: Create a new post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePostBody"
+      responses:
+        "201":
+          description: Post created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /posts/{id}:
+    get:
+      operationId: getPost
+      tags: [posts]
+      summary: Get a post by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Post details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updatePost
+      tags: [posts]
+      summary: Update a post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePostBody"
+      responses:
+        "200":
+          description: Post updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deletePost
+      tags: [posts]
+      summary: Delete a post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Post deleted
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /posts/{id}/publish:
+    post:
+      operationId: publishPost
+      tags: [posts]
+      summary: Publish a post immediately to Facebook
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Post published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "400":
+          description: Publish error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /images/generate:
+    post:
+      operationId: generateImage
+      tags: [images]
+      summary: Generate an AI image using Hugging Face free inference
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateImageBody"
+      responses:
+        "200":
+          description: Generated image URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GeneratedImage"
+        "400":
+          description: Generation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /dashboard/stats:
+    get:
+      operationId: getDashboardStats
+      tags: [dashboard]
+      summary: Get dashboard summary statistics
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /dashboard/recent-posts:
+    get:
+      operationId: getRecentPosts
+      tags: [dashboard]
+      summary: Get the 5 most recent posts across all pages
+      responses:
+        "200":
+          description: Recent posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+
+  /dashboard/upcoming:
+    get:
+      operationId: getUpcomingPosts
+      tags: [dashboard]
+      summary: Get upcoming scheduled posts
+      responses:
+        "200":
+          description: Upcoming scheduled posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +324,191 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    FacebookPage:
+      type: object
+      properties:
+        id:
+          type: integer
+        pageId:
+          type: string
+        name:
+          type: string
+        category:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+        accessToken:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - pageId
+        - name
+        - accessToken
+        - createdAt
+
+    ConnectPageBody:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: Facebook user access token — we will fetch page details automatically
+      required:
+        - accessToken
+
+    Post:
+      type: object
+      properties:
+        id:
+          type: integer
+        pageId:
+          type: integer
+        pageName:
+          type: ["string", "null"]
+        title:
+          type: ["string", "null"]
+        postType:
+          type: string
+          enum: [text, image, video]
+        caption:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        audioUrl:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [draft, scheduled, published, failed]
+        scheduledAt:
+          type: ["string", "null"]
+          format: date-time
+        publishedAt:
+          type: ["string", "null"]
+          format: date-time
+        facebookPostId:
+          type: ["string", "null"]
+        errorMessage:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - pageId
+        - caption
+        - status
+        - postType
+        - createdAt
+
+    CreatePostBody:
+      type: object
+      properties:
+        pageId:
+          type: integer
+        title:
+          type: ["string", "null"]
+        postType:
+          type: string
+          enum: [text, image, video]
+        caption:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        mediaPrompt:
+          type: ["string", "null"]
+          description: "AI prompt — if set and imageUrl is absent, the scheduler generates the image at publish time"
+        audioUrl:
+          type: ["string", "null"]
+        scheduledAt:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - pageId
+        - caption
+
+    BulkCreatePostsBody:
+      type: object
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreatePostBody"
+      required:
+        - posts
+
+    UpdatePostBody:
+      type: object
+      properties:
+        title:
+          type: ["string", "null"]
+        postType:
+          type: string
+          enum: [text, image, video]
+        caption:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        audioUrl:
+          type: ["string", "null"]
+        scheduledAt:
+          type: ["string", "null"]
+          format: date-time
+        status:
+          type: string
+          enum: [draft, scheduled]
+
+    GenerateImageBody:
+      type: object
+      properties:
+        prompt:
+          type: string
+          description: Text prompt to generate an image from
+        style:
+          type: ["string", "null"]
+          description: Style hint e.g. photorealistic, cartoon, watercolor
+      required:
+        - prompt
+
+    GeneratedImage:
+      type: object
+      properties:
+        imageUrl:
+          type: string
+        prompt:
+          type: string
+      required:
+        - imageUrl
+        - prompt
+
+    DashboardStats:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+        totalPosts:
+          type: integer
+        scheduledPosts:
+          type: integer
+        publishedPosts:
+          type: integer
+        draftPosts:
+          type: integer
+        failedPosts:
+          type: integer
+      required:
+        - totalPages
+        - totalPosts
+        - scheduledPosts
+        - publishedPosts
+        - draftPosts
+        - failedPosts

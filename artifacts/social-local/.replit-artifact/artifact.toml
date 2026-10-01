@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Social Local"
+description = "Schedule Facebook posts, manage connected pages, and organize image publishing in batches."
+version = "1.0.0"
+id = "artifacts/social-local"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20771
+
+[services.development]
+run = "pnpm --filter @workspace/social-local run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/social-local", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/social-local/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20771"
+BASE_PATH = "/"
